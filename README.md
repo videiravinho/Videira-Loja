@@ -3,13 +3,9 @@
 Catálogo responsivo em HTML, CSS e JavaScript, conectado ao Supabase Videira Loja. Não processa pagamentos: a seleção segue para o WhatsApp.
 
 ## Administrador
-1. Em Supabase > Authentication > Users, crie uma conta administrativa e configure sua senha diretamente no painel.
-2. No SQL Editor, execute (substituindo o e-mail):
-
-```sql
-update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb where email = 'SEU_EMAIL';
-```
-3. Entre em /admin com essa conta. Se já estava conectado, saia e entre novamente para atualizar o token.
+1. Em Supabase > Authentication > Users, crie e confirme a conta administrativa com o e-mail informado pelo proprietário. Defina a senha diretamente no Supabase.
+2. O banco já está configurado para atribuir role admin automaticamente ao e-mail confirmado do proprietário.
+3. Entre em /admin com essa conta.
 
 Somente role admin em app_metadata permite cadastrar ou editar. Visitantes leem apenas produtos ativos. Nunca coloque service_role no frontend.
 
