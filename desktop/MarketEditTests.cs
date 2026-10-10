@@ -1,0 +1,13 @@
+using System;using System.Data;using System.IO;using System.Linq;
+namespace Videira {static class MarketEditTests {
+static void Check(bool c,string message){if(!c)throw new Exception("Edição Mercado: "+message);}
+public static void Run(){string root=Path.Combine(Environment.CurrentDirectory,"work","MarketEdit-"+Guid.NewGuid());var db=new Store(root);db.ImportPortfolio();var m=db.Data.Tables["Mercado"].Rows[0];var p=db.Data.Tables["Produtos"].Rows.Find(m["Produto"]);p["Preço"]=65m;p["Estoque"]=7m;db.Save();
+db.EditMarketRecord(m,"test001","vinho teste 750ml",750,"Fornecedor editado",40m,"bodega teste",80m,"BRL","Pesquisa manual","","Confirmado",DateTime.Today,"Observação alterada");
+Check(p["Nome"].ToString()=="VINHO TESTE 750ML"&&p["Código"].ToString()=="TEST001"&&p["Fornecedor"].ToString()=="Fornecedor editado"&&(decimal)p["Custo"]==40m&&m["Bodega"].ToString()=="BODEGA TESTE","campos compartilhados e bodega editados");
+var view=db.MarketView().Rows[0];Check((decimal)view["Lucro bruto R$"]==40m&&(decimal)view["Markup %"]==100m,"recalcular");Check((decimal)p["Preço"]==65m&&(decimal)p["Estoque"]==7m,"preservar venda e estoque");
+db.EditMarketRecord(m,"test001","vinho teste 750ml",750,"Fornecedor editado",40m,"bodega teste",null,"BRL","","","Sem preço confirmado",DateTime.Today,"Removido pelo usuário");
+Check(db.FillMissingMarketReferences()==0&&m.IsNull("Preço referência"),"não repor referência removida manualmente");
+var missing=db.Data.Tables["Mercado"].Rows[1];missing["Preço referência"]=DBNull.Value;missing["Fonte"]="";missing["URL"]="";Check(db.FillMissingMarketReferences()==1&&!missing.IsNull("Preço referência"),"preencher pendência sem sobrescrever usuário");
+bool failed=false;try{db.EditMarketRecord(m,db.Data.Tables["Produtos"].Rows[1]["Código"].ToString(),"INVÁLIDO",750,"",1m,"",2m,"BRL","Loja","https://example.com","Confirmado",DateTime.Today,"");}catch{failed=true;}Check(failed&&p["Nome"].ToString()=="VINHO TESTE 750ML","bloquear código duplicado sem alteração parcial");
+failed=false;try{db.EditMarketRecord(m,"test001","INVÁLIDO",750,"",1m,"",2m,"BRL","Loja","file:///x","Confirmado",DateTime.Today,"");}catch{failed=true;}Check(failed&&p["Nome"].ToString()=="VINHO TESTE 750ML","validar link sem mutação");db.Save();db=new Store(root);Check(db.Data.Tables["Produtos"].Rows[0]["Nome"].ToString()=="VINHO TESTE 750ML"&&(bool)db.Data.Tables["Mercado"].Rows[0]["Editado pelo usuário"],"persistir edição e proteção manual");File.AppendAllText(Path.Combine(Environment.CurrentDirectory,"work","test-result.txt"),"\r\nPASS 2.4 Mercado: edição completa integrada, maiúsculas, recálculo, persistência, proteção de edições manuais, código único e validação de links.");}
+}}
